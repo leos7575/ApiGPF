@@ -32,4 +32,4 @@ def actualizar_coordenadas(id):
         return jsonify(ResponseMessage.err500), 500
 
     
-app.run(host="0.0.0.0",port=5000,debug=True,threaded=True)
+# app.run(host="0.0.0.0",port=5000,debug=True,threaded=True)
