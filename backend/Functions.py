@@ -24,6 +24,9 @@ def fnMensaje():
                     "id":str(objCor.get("_id")),
                     "lat":objCor.get("lat"),
                     "long":objCor.get("long"),
+                    "temperatura":objCor.get("temperatura"),
+                    "pulso":objCor.get("pulso"),
+                    "oxigenacion":objCor.get("oxigeno"),
                 }
                 arrFinal.append(objFormateado)
         objResponse=ResponseMessage.succ200.copy()
