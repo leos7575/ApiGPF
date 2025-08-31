@@ -4,58 +4,55 @@ from bson import ObjectId
 import backend.GlobalInfo.Keys as keys
 import backend.GlobalInfo.ResponseMessages as ResponseMessage
 import datetime
-import requests
+import firebase_admin
+from firebase_admin import credentials, messaging
 
-# 🔑 Configuración FCM
-FCM_SERVER_KEY = "TU_SERVER_KEY_DE_FIREBASE"
-FCM_URL = "https://fcm.googleapis.com/fcm/send"
+# -------------------- INICIALIZAR FIREBASE ADMIN --------------------
+cred = credentials.Certificate("backend/keys/monitoreogpf-98cb4438dfa9.json")
+firebase_admin.initialize_app(cred)
 
-# Umbrales críticos
+# -------------------- UMbrales CRÍTICOS --------------------
 BPM_MIN = 40
 BPM_MAX = 120
 TEMP_MIN = 35.0
 TEMP_MAX = 41.0
 
-# Conexión a MongoDB
+# -------------------- CONEXIÓN A MONGO --------------------
 if keys.dbconn is None:
     mongoconect = MongoClient(keys.strConnection)
     keys.dbconn = mongoconect[keys.strDBConnection]
 
-dbCor = keys.dbconn['coordenadas']  # colección de coordenadas
+dbCor = keys.dbconn['coordenadas']   # colección de coordenadas
 dbFCMTokens = keys.dbconn['fcm_tokens']  # colección de tokens FCM
 
-
-# -------------------- ALERTAS FCM --------------------
+# -------------------- FUNCIONES FCM --------------------
 def send_alert_fcm(tokens, title, body):
     """
     Envía una alerta FCM full-screen a una lista de tokens.
     """
-    headers = {
-        "Authorization": f"key={FCM_SERVER_KEY}",
-        "Content-Type": "application/json"
-    }
-
     for token in tokens:
-        payload = {
-            "to": token,
-            "priority": "high",
-            "android": {
-                "priority": "high",
-                "notification": {
-                    "channel_id": "alert_channel",
-                    "title": title,
-                    "body": body,
-                    "sound": "default",
-                    "click_action": "FLUTTER_NOTIFICATION_CLICK",
-                    "tag": "urgent",
-                    "full_screen_intent": True
-                }
-            }
-        }
-        response = requests.post(FCM_URL, json=payload, headers=headers)
-        print(f"Alerta enviada a {token}: {title} - {body}")
-        print("Respuesta FCM:", response.status_code, response.text)
-
+        message = messaging.Message(
+            token=token,
+            android=messaging.AndroidConfig(
+                priority='high',
+                notification=messaging.AndroidNotification(
+                    channel_id='alert_channel',
+                    title=title,
+                    body=body,
+                    sound='default',
+                    click_action='FLUTTER_NOTIFICATION_CLICK',
+                    tag='urgent',
+                    # Full-screen intent en Android
+                    visibility=messaging.AndroidNotificationVisibility.PUBLIC
+                )
+            )
+        )
+        try:
+            response = messaging.send(message)
+            print(f"Alerta enviada a {token}: {title} - {body}")
+            print("Respuesta FCM:", response)
+        except Exception as e:
+            print(f"Error enviando alerta a {token}: {e}")
 
 # -------------------- FUNCIONES PRINCIPALES --------------------
 def fnMensaje():
@@ -84,7 +81,7 @@ def fnMensaje():
                     alert_triggered = True
                     alert_msg += f"Temperatura crítica: {temperatura}°C\n"
 
-                # Enviar notificación FCM si se detecta alerta
+                # Enviar notificación FCM si hay alerta y hay tokens
                 if alert_triggered and tokens:
                     send_alert_fcm(tokens, "🚨 Alerta Crítica de Animal", alert_msg)
 
@@ -106,7 +103,6 @@ def fnMensaje():
         print("Error en fnMensaje", e)
         objResponse = ResponseMessage.err500.copy()
         return jsonify(objResponse)
-
 
 def fnInsertarCoordenadas(data):
     try:
@@ -146,7 +142,6 @@ def fnInsertarCoordenadas(data):
         objResponse = ResponseMessage.err500.copy()
         objResponse['message'] = 'Error al actualizar lectura'
         return jsonify(objResponse), 500
-
 
 def registrar_token_fcm(data):
     """
