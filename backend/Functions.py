@@ -6,7 +6,7 @@ import datetime
 import requests
 import os  # <-- Agregar esto
 import firebase_admin
-from firebase_admin import credentials
+from firebase_admin import credentials, messaging
 import backend.GlobalInfo.Keys as keys
 import backend.GlobalInfo.ResponseMessages as ResponseMessage
 
