@@ -31,5 +31,14 @@ def actualizar_coordenadas(id):
         print("Error en actualizar_coordenadas:", e)
         return jsonify(ResponseMessage.err500), 500
 
-    
+@app.route("/registrar-token", methods=["POST"])
+@cross_origin(allow_headers=['Content-Type'])
+def registrar_token():
+    try:
+        # Llama a la función del backend que maneja el registro
+        return CallMethood.registrar_token_fcm(request.json)
+    except Exception as e:
+        print("Error en registrar_token:", e)
+        return jsonify(ResponseMessage.err500), 500
+
 # app.run(host="0.0.0.0",port=5000,debug=True,threaded=True)
