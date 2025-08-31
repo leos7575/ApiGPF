@@ -11,7 +11,7 @@ import backend.GlobalInfo.ResponseMessages as ResponseMessage
 
 # -------------------- INICIALIZAR FIREBASE ADMIN --------------------
 # Usar variable de entorno en Render
-firebase_path = os.environ.get("FIREBASE_ADMIN_KEY_PATH", "backend/keys/monitoreogpf-98cb4438dfa9.json")
+firebase_path = os.environ.get("FIREBASE_ADMIN_KEY_PATH")
 cred = credentials.Certificate(firebase_path)
 firebase_admin.initialize_app(cred)
 
