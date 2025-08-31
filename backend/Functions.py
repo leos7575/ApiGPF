@@ -38,9 +38,6 @@ dbFCMTokens = keys.dbconn['fcm_tokens']  # colección de tokens FCM
 
 # -------------------- FUNCIONES FCM --------------------
 def send_alert_fcm(tokens, title, body):
-    """
-    Envía una alerta FCM full-screen a una lista de tokens.
-    """
     for token in tokens:
         message = messaging.Message(
             token=token,
@@ -52,9 +49,8 @@ def send_alert_fcm(tokens, title, body):
                     body=body,
                     sound='default',
                     click_action='FLUTTER_NOTIFICATION_CLICK',
-                    tag='urgent',
-                    # Full-screen intent en Android
-                    visibility=messaging.AndroidNotificationVisibility.PUBLIC
+                    tag='urgent'
+                    # visibility eliminado
                 )
             )
         )
