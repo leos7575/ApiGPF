@@ -1,11 +1,13 @@
 from flask import jsonify, request
 from pymongo import MongoClient
 from bson import ObjectId
+import datetime
+import requests
+import os  # <-- Agregar esto
+import firebase_admin
+from firebase_admin import credentials
 import backend.GlobalInfo.Keys as keys
 import backend.GlobalInfo.ResponseMessages as ResponseMessage
-import datetime
-import firebase_admin
-from firebase_admin import credentials, messaging
 
 # -------------------- INICIALIZAR FIREBASE ADMIN --------------------
 # Usar variable de entorno en Render
