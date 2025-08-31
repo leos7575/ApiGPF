@@ -1,1 +1,36 @@
+# -------------------------
+# Python / Flask
+# -------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+.env
+
+# -------------------------
+# IDE / sistema
+# -------------------------
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# -------------------------
+# MongoDB local o bases de datos
+# -------------------------
+db.db
+*.sqlite3
+
+# -------------------------
+# Archivos de Firebase / credenciales
+# -------------------------
 backend/keys/*.json
+
+# -------------------------
+# Logs y temporales
+# -------------------------
+*.log
+tmp/
