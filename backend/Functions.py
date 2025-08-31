@@ -25,7 +25,7 @@ else:
 # -------------------- UMbrales CRÍTICOS --------------------
 BPM_MIN = 40
 BPM_MAX = 120
-TEMP_MIN = 35.0
+TEMP_MIN = 30.0
 TEMP_MAX = 41.0
 
 # -------------------- CONEXIÓN A MONGO --------------------
