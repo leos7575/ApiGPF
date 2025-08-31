@@ -1,5 +1,5 @@
 # Usamos una imagen oficial de Python 3.10
-FROM python:3.11-slim
+FROM python:3.10-slim
 
 # Evitamos que Python cree archivos .pyc
 ENV PYTHONDONTWRITEBYTECODE=1
