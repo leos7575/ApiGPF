@@ -1,6 +1,7 @@
 from flask import jsonify, request
 from pymongo import MongoClient
 from bson import ObjectId
+import json
 import datetime
 import requests
 import os  # <-- Agregar esto
@@ -10,10 +11,16 @@ import backend.GlobalInfo.Keys as keys
 import backend.GlobalInfo.ResponseMessages as ResponseMessage
 
 # -------------------- INICIALIZAR FIREBASE ADMIN --------------------
-# Usar variable de entorno en Render
-firebase_path = os.environ.get("FIREBASE_ADMIN_KEY_PATH")
-cred = credentials.Certificate(firebase_path)
-firebase_admin.initialize_app(cred)
+# Leer el JSON de Firebase desde la variable de entorno
+firebase_json_str = os.environ.get("FIREBASE_ADMIN_KEY_JSON")  # nombre exacto de tu variable en Render
+
+if firebase_json_str:
+    firebase_cred_dict = json.loads(firebase_json_str)  # parsear el JSON
+    cred = credentials.Certificate(firebase_cred_dict)
+    firebase_admin.initialize_app(cred)
+    print("✅ Firebase inicializado correctamente")
+else:
+    print("⚠️ No se encontró la variable de entorno FIREBASE_ADMIN_KEY_JSON")
 
 # -------------------- UMbrales CRÍTICOS --------------------
 BPM_MIN = 40
