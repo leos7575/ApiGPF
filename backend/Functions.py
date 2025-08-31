@@ -1,5 +1,4 @@
-from flask import jsonify
-from flask import request
+from flask import jsonify, request
 from pymongo import MongoClient
 from bson import ObjectId
 import backend.GlobalInfo.Keys as keys
@@ -10,7 +9,6 @@ import requests
 # 🔑 Configuración FCM
 FCM_SERVER_KEY = "TU_SERVER_KEY_DE_FIREBASE"
 FCM_URL = "https://fcm.googleapis.com/fcm/send"
-DEVICE_FCM_TOKEN = "TOKEN_DEL_DISPOSITIVO"  # reemplaza con tu token FCM
 
 # Umbrales críticos
 BPM_MIN = 40
@@ -18,48 +16,58 @@ BPM_MAX = 120
 TEMP_MIN = 35.0
 TEMP_MAX = 41.0
 
-# Función para enviar alerta FCM full-screen
-def send_alert_fcm(fcm_token, title, body):
+# Conexión a MongoDB
+if keys.dbconn is None:
+    mongoconect = MongoClient(keys.strConnection)
+    keys.dbconn = mongoconect[keys.strDBConnection]
+
+dbCor = keys.dbconn['coordenadas']  # colección de coordenadas
+dbFCMTokens = keys.dbconn['fcm_tokens']  # colección de tokens FCM
+
+
+# -------------------- ALERTAS FCM --------------------
+def send_alert_fcm(tokens, title, body):
+    """
+    Envía una alerta FCM full-screen a una lista de tokens.
+    """
     headers = {
         "Authorization": f"key={FCM_SERVER_KEY}",
         "Content-Type": "application/json"
     }
-    payload = {
-        "to": fcm_token,
-        "priority": "high",
-        "android": {
+
+    for token in tokens:
+        payload = {
+            "to": token,
             "priority": "high",
-            "notification": {
-                "channel_id": "alert_channel",
-                "title": title,
-                "body": body,
-                "sound": "default",
-                "click_action": "FLUTTER_NOTIFICATION_CLICK",
-                "tag": "urgent",
-                "full_screen_intent": True
+            "android": {
+                "priority": "high",
+                "notification": {
+                    "channel_id": "alert_channel",
+                    "title": title,
+                    "body": body,
+                    "sound": "default",
+                    "click_action": "FLUTTER_NOTIFICATION_CLICK",
+                    "tag": "urgent",
+                    "full_screen_intent": True
+                }
             }
         }
-    }
-    response = requests.post(FCM_URL, json=payload, headers=headers)
-    print("Alerta enviada:", title, "-", body)
-    print("Respuesta FCM:", response.status_code, response.text)
+        response = requests.post(FCM_URL, json=payload, headers=headers)
+        print(f"Alerta enviada a {token}: {title} - {body}")
+        print("Respuesta FCM:", response.status_code, response.text)
 
-# Conexión a MongoDB
-if keys.dbconn==None:
-    mongoconect=MongoClient(keys.strConnection)
-    keys.dbconn=mongoconect[keys.strDBConnection]
-    dbCor=keys.dbconn['coordenadas']
-# Nueva colección para tokens FCM
-if keys.dbconn==None:
-    mongoconect=MongoClient(keys.strConnection)
-    keys.dbconn=mongoconect[keys.strDBConnection]
-dbFCMTokens = keys.dbconn['fcm_tokens']  # colección para guardar tokens
+
+# -------------------- FUNCIONES PRINCIPALES --------------------
 def fnMensaje():
     try:
-        arrFinal=[]
-        consulta=dbCor.find({})
-        listCor=list(consulta)
-        if len(listCor)!=0:
+        arrFinal = []
+        consulta = dbCor.find({})
+        listCor = list(consulta)
+
+        if len(listCor) != 0:
+            # Obtener todos los tokens registrados
+            tokens = [doc['token'] for doc in dbFCMTokens.find({})]
+
             for objCor in listCor:
                 temperatura = objCor.get("temperatura")
                 pulso = objCor.get("pulso")
@@ -77,31 +85,28 @@ def fnMensaje():
                     alert_msg += f"Temperatura crítica: {temperatura}°C\n"
 
                 # Enviar notificación FCM si se detecta alerta
-                if alert_triggered:
-                    send_alert_fcm(
-                        DEVICE_FCM_TOKEN,
-                        "🚨 Alerta Crítica de Animal",
-                        alert_msg
-                    )
+                if alert_triggered and tokens:
+                    send_alert_fcm(tokens, "🚨 Alerta Crítica de Animal", alert_msg)
 
-                objFormateado={
-                    "id":str(objCor.get("_id")),
-                    "lat":objCor.get("lat"),
-                    "long":objCor.get("long"),
-                    "temperatura":temperatura,
-                    "pulso":pulso,
-                    "oxigenacion":objCor.get("oxigeno"),
+                objFormateado = {
+                    "id": str(objCor.get("_id")),
+                    "lat": objCor.get("lat"),
+                    "long": objCor.get("long"),
+                    "temperatura": temperatura,
+                    "pulso": pulso,
+                    "oxigenacion": objCor.get("oxigeno"),
                 }
                 arrFinal.append(objFormateado)
 
-        objResponse=ResponseMessage.succ200.copy()
-        objResponse['Coordenadas']=arrFinal
+        objResponse = ResponseMessage.succ200.copy()
+        objResponse['Coordenadas'] = arrFinal
         return jsonify(objResponse)
 
     except Exception as e:
-        print("Error en fnMensaje",e)
-        objResponse=ResponseMessage.err500.copy()
+        print("Error en fnMensaje", e)
+        objResponse = ResponseMessage.err500.copy()
         return jsonify(objResponse)
+
 
 def fnInsertarCoordenadas(data):
     try:
@@ -141,14 +146,14 @@ def fnInsertarCoordenadas(data):
         objResponse = ResponseMessage.err500.copy()
         objResponse['message'] = 'Error al actualizar lectura'
         return jsonify(objResponse), 500
-    
-def registrar_token_fcm():
+
+
+def registrar_token_fcm(data):
     """
-    Endpoint para registrar un token FCM desde la app Ionic.
+    Registra un token FCM desde la app Ionic.
     Recibe JSON: { "fcm_token": "TOKEN_DEL_DISPOSITIVO" }
     """
     try:
-        data = request.json
         token = data.get("fcm_token")
         if not token:
             return jsonify({"status": "error", "message": "Falta fcm_token"}), 400
