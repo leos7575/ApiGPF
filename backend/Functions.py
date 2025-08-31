@@ -8,7 +8,9 @@ import firebase_admin
 from firebase_admin import credentials, messaging
 
 # -------------------- INICIALIZAR FIREBASE ADMIN --------------------
-cred = credentials.Certificate("backend/keys/monitoreogpf-98cb4438dfa9.json")
+# Usar variable de entorno en Render
+firebase_path = os.environ.get("FIREBASE_ADMIN_KEY_PATH", "backend/keys/monitoreogpf-98cb4438dfa9.json")
+cred = credentials.Certificate(firebase_path)
 firebase_admin.initialize_app(cred)
 
 # -------------------- UMbrales CRÍTICOS --------------------
